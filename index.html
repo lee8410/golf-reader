@@ -7,9 +7,11 @@
 <main><div class="eyebrow">WORLD GOLF · LISTEN & LEARN</div><h1>The world's top 100</h1>
 <p class="sub">Static snapshot retrieved September 19, 2026 from <a href="https://www.owgr.com/current-world-ranking" target="_blank" rel="noopener">Official World Golf Ranking</a>.<br>Hear each player's world ranking and name while viewing their player portrait.</p>
 <div class="layout"><section class="card" aria-label="Player reader"><div class="photo"><img id="photo" alt=""><span id="fallback" hidden>Photo unavailable</span></div><div id="rank"></div><h2 id="name"></h2><div id="country"></div><div class="controls"><button id="previous" aria-label="Previous player">←</button><button class="primary" id="play">Play from here</button><button id="stop">Stop</button><button id="next" aria-label="Next player">→</button></div>
+<div style="display:flex;gap:16px;flex-wrap:wrap"><label for="rangeStart">From ranking<br><input id="rangeStart" type="number" min="1" max="100" step="1" value="1" style="width:100px;padding:8px"></label><label for="rangeEnd">To ranking<br><input id="rangeEnd" type="number" min="1" max="100" step="1" value="25" style="width:100px;padding:8px"></label></div>
+<label><input id="loopRange" type="checkbox" checked> Loop range</label>
 <label for="voice">Voice</label><select id="voice"><option value="">Browser default English voice</option></select>
 <label for="speed">Reading speed: <output id="speedLabel">0.85×</output></label><input id="speed" type="range" min="0.6" max="1.3" step="0.05" value="0.85">
-<p id="status" role="status">Choose Play to begin. Click any player to start there.</p><progress id="progress" max="100" value="1" aria-label="Player position"></progress>
+<p id="status" role="status">Default: loop rankings 1–25. Choose Play to begin.</p><progress id="progress" max="100" value="1" aria-label="Player position"></progress>
 <p class="fine">The rankings and photo URLs are embedded in JavaScript and never refresh automatically. Photos load from OWGR and PGA TOUR image hosts and need internet. Voice availability and pronunciation depend on your browser.</p></section>
 <section class="card" aria-label="All 100 players"><h2 style="font-size:20px;margin-top:0">The complete list</h2><p class="fine">Select a name to view their photo.</p><div id="list"></div></section></div>
 <div class="tools"><button id="download">Download JavaScript source</button></div>
@@ -827,6 +829,7 @@ const PLAYERS = [
   const $ = id => document.getElementById(id);
   const synth = window.speechSynthesis;
   let index = 0, playing = false, generation = 0, timer = null, utterance = null;
+  let rangeStart = 0, rangeEnd = 24;
   const buttons = [];
   function halt() {
     generation++;
@@ -859,25 +862,46 @@ const PLAYERS = [
   function say() {
     const token = generation;
     const p = PLAYERS[index];
-    $('status').textContent = `Reading ${index + 1} of ${PLAYERS.length}: ${p.name}`;
-    utterance = new SpeechSynthesisUtterance(`${p.rank} ${p.name}.`);
-    utterance.lang = 'en-US';
-    utterance.rate = Number($('speed').value);
+    $('status').textContent = `Reading rank ${p.rank} (${rangeStart + 1}–${rangeEnd + 1}): ${p.name}`;
     const voice = synth.getVoices().find(v => v.voiceURI === $('voice').value);
-    if (voice) { utterance.voice = voice; utterance.lang = voice.lang; }
-    utterance.onend = () => {
+    function afterPause(next) {
+      timer = setTimeout(() => {
+        if (token === generation && playing) next();
+      }, 500);
+    }
+    function speakPart(text, next) {
       if (token !== generation || !playing) return;
-      if (index === PLAYERS.length - 1) { halt(); $('status').textContent = 'Finished all 100 players.'; return; }
-      timer = setTimeout(() => { if (token === generation && playing) { index++; show(); say(); } }, 650);
-    };
-    utterance.onerror = e => {
-      if (token !== generation) return;
-      halt(); $('status').textContent = `Speech unavailable (${e.error}). Try an English voice or open this file in Chrome.`;
-    };
-    synth.speak(utterance);
+      utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = voice ? voice.lang : 'en-US';
+      utterance.rate = Number($('speed').value);
+      if (voice) utterance.voice = voice;
+      utterance.onend = () => {
+        if (token === generation && playing) afterPause(next);
+      };
+      utterance.onerror = e => {
+        if (token !== generation) return;
+        halt(); $('status').textContent = `Speech unavailable (${e.error}). Try an English voice or open this file in Chrome.`;
+      };
+      synth.speak(utterance);
+    }
+    speakPart(String(p.rank), () => speakPart(p.name, () => {
+      if (index >= rangeEnd) {
+        if ($('loopRange').checked) { index = rangeStart; show(); say(); }
+        else { halt(); $('status').textContent = `Finished rankings ${rangeStart + 1}–${rangeEnd + 1}.`; }
+      } else {
+        index++; show(); say();
+      }
+    }));
   }
   function start() {
     halt();
+    const from = Number($('rangeStart').value), to = Number($('rangeEnd').value);
+    if (!Number.isInteger(from) || !Number.isInteger(to) || from < 1 || to > 100 || from > to) {
+      $('status').textContent = 'Enter whole rankings from 1 to 100, with From no greater than To.';
+      return;
+    }
+    rangeStart = from - 1; rangeEnd = to - 1;
+    if (index < rangeStart || index > rangeEnd) { index = rangeStart; show(); }
     if (!synth) { $('status').textContent = 'Speech is not supported in this browser. Open this file in Chrome.'; return; }
     playing = true;
     $('play').textContent = 'Restart this player';
@@ -890,16 +914,35 @@ const PLAYERS = [
     rank.textContent = p.rank; name.textContent = p.name;
     b.append(rank,name); b.onclick = () => select(i); buttons.push(b); $('list').appendChild(b);
   });
+  $('rangeStart').onchange = $('rangeEnd').onchange = () => {
+    halt();
+    const from = Number($('rangeStart').value), to = Number($('rangeEnd').value);
+    if (Number.isInteger(from) && Number.isInteger(to) && from >= 1 && to <= 100 && from <= to) {
+      index = from - 1; show();
+      $('status').textContent = `Ready for rankings ${from}–${to}. Press Play to begin.`;
+    } else {
+      $('status').textContent = 'Enter whole rankings from 1 to 100, with From no greater than To.';
+    }
+  };
   $('play').onclick = start;
   $('stop').onclick = () => { halt(); $('status').textContent = 'Stopped. Play repeats the current player and continues.'; };
   $('previous').onclick = () => select(Math.max(0,index-1));
   $('next').onclick = () => select(Math.min(PLAYERS.length-1,index+1));
   $('speed').oninput = () => { $('speedLabel').textContent = `${Number($('speed').value).toFixed(2)}×`; };
+  let voiceChosenByUser = false;
+  $('voice').onchange = () => { voiceChosenByUser = true; };
   function voices() {
     const selected = $('voice').value;
+    const available = synth.getVoices().filter(v => /^en\b/i.test(v.lang));
+    const preferred = available.find(v => v.name.toLowerCase() === 'google us english') ||
+      available.find(v => v.lang.toLowerCase() === 'en-us') || available[0];
     $('voice').replaceChildren(new Option('Browser default English voice',''));
-    synth.getVoices().filter(v => /^en\b/i.test(v.lang)).forEach(v => $('voice').add(new Option(`${v.name} (${v.lang})`,v.voiceURI)));
-    if ([...$('voice').options].some(o => o.value === selected)) $('voice').value = selected;
+    available.forEach(v => $('voice').add(new Option(`${v.name} (${v.lang})`,v.voiceURI)));
+    if (voiceChosenByUser && [...$('voice').options].some(o => o.value === selected)) {
+      $('voice').value = selected;
+    } else {
+      $('voice').value = preferred ? preferred.voiceURI : '';
+    }
   }
   if (synth) { voices(); synth.addEventListener('voiceschanged', voices); }
   $('download').onclick = () => {
