@@ -860,7 +860,7 @@ const PLAYERS = [
     const token = generation;
     const p = PLAYERS[index];
     $('status').textContent = `Reading ${index + 1} of ${PLAYERS.length}: ${p.name}`;
-    utterance = new SpeechSynthesisUtterance(`World number ${p.rank}. ${p.name}.`);
+    utterance = new SpeechSynthesisUtterance(`${p.rank} ${p.name}.`);
     utterance.lang = 'en-US';
     utterance.rate = Number($('speed').value);
     const voice = synth.getVoices().find(v => v.voiceURI === $('voice').value);
