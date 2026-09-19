@@ -1,0 +1,913 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OWGR Top 100 · Listen & Learn</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f2f3ee;color:#182e27;font:16px system-ui,sans-serif}main{max-width:1100px;margin:auto;padding:36px 24px}h1{font-size:38px;margin:5px 0}a{color:#21654d}.eyebrow{letter-spacing:3px;font-size:12px;font-weight:700}.sub{color:#58675e;line-height:1.6}.layout{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:28px}.card{background:#fff;border:1px solid #dce1d8;border-radius:20px;padding:26px}.photo{height:320px;display:grid;place-items:center;background:#e8eee6;border-radius:12px;overflow:hidden}.photo img{width:100%;height:100%;object-fit:contain}#rank{font-size:16px;color:#557761;margin-top:20px}h2{font-size:30px;margin:6px 0}.controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}button,select,input{font:inherit}button{background:#e8eee6;border:0;border-radius:8px;padding:11px 16px;cursor:pointer;color:#182e27}button.primary{background:#204d3a;color:white}button:disabled{opacity:.5;cursor:default}button:focus-visible,select:focus-visible{outline:3px solid #bb891d;outline-offset:3px}label{display:block;margin-top:16px;font-size:14px}select{max-width:100%;padding:7px;border:1px solid #bdcabc;border-radius:6px}#list{max-height:660px;overflow:auto;display:grid;gap:5px}#list button{text-align:left;background:transparent;display:flex;gap:16px;align-items:center}#list button[aria-current=true]{background:#e5efdf;font-weight:bold}#list button span:first-child{width:30px;color:#65816c}#status{min-height:42px;font-size:14px;color:#58675e}progress{width:100%;accent-color:#28563f;height:6px}.fine{font-size:12px;color:#647167;line-height:1.6}#fallback{padding:40px}.tools{margin-top:20px}@media(max-width:720px){.layout{grid-template-columns:1fr}h1{font-size:30px}.photo{height:280px}#list{max-height:360px}}
+</style>
+<main><div class="eyebrow">WORLD GOLF · LISTEN & LEARN</div><h1>The world's top 100</h1>
+<p class="sub">Static snapshot retrieved September 19, 2026 from <a href="https://www.owgr.com/current-world-ranking" target="_blank" rel="noopener">Official World Golf Ranking</a>.<br>Hear each player's world ranking and name while viewing their player portrait.</p>
+<div class="layout"><section class="card" aria-label="Player reader"><div class="photo"><img id="photo" alt=""><span id="fallback" hidden>Photo unavailable</span></div><div id="rank"></div><h2 id="name"></h2><div id="country"></div><div class="controls"><button id="previous" aria-label="Previous player">←</button><button class="primary" id="play">Play from here</button><button id="stop">Stop</button><button id="next" aria-label="Next player">→</button></div>
+<label for="voice">Voice</label><select id="voice"><option value="">Browser default English voice</option></select>
+<label for="speed">Reading speed: <output id="speedLabel">0.85×</output></label><input id="speed" type="range" min="0.6" max="1.3" step="0.05" value="0.85">
+<p id="status" role="status">Choose Play to begin. Click any player to start there.</p><progress id="progress" max="100" value="1" aria-label="Player position"></progress>
+<p class="fine">The rankings and photo URLs are embedded in JavaScript and never refresh automatically. Photos load from OWGR and PGA TOUR image hosts and need internet. Voice availability and pronunciation depend on your browser.</p></section>
+<section class="card" aria-label="All 100 players"><h2 style="font-size:20px;margin-top:0">The complete list</h2><p class="fine">Select a name to view their photo.</p><div id="list"></div></section></div>
+<div class="tools"><button id="download">Download JavaScript source</button></div>
+</main>
+<script id="reader-script">
+// Static official OWGR snapshot retrieved 2026-09-19.
+// Source: https://www.owgr.com/current-world-ranking
+// Rankings API: https://apiweb.owgr.com/api/owgr/rankings/getRankings
+// Photos: OWGR profiles; PGA TOUR portraits for ranks 86, 87, 90, and 98.
+// This JavaScript runs in the companion HTML page; it makes no ranking API calls.
+const PLAYERS = [
+  {
+    "rank": 1,
+    "name": "Scottie Scheffler",
+    "country": "United States",
+    "owgrId": 18417,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/587bd607-1989-4e3c-a672-8aa901f866be/Scheffler%20Scottie.jpg?w=800&h=800&fit=clip&rect=1035,329,1643,1644",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=18417"
+  },
+  {
+    "rank": 2,
+    "name": "Rory McIlroy",
+    "country": "Northern Ireland",
+    "owgrId": 10091,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/e35b2581-e02e-4377-9bea-004ed984019a/Masters%20Winner%202026.jpg?w=800&h=800&fit=clip&rect=1094,349,3310,3310",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=10091"
+  },
+  {
+    "rank": 3,
+    "name": "Cameron Young",
+    "country": "United States",
+    "owgrId": 26651,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/20525eec-7c63-4910-a8b9-e29df7605d67/Young%20Cameron.jpg?w=800&h=800&fit=clip&rect=1621,410,2706,2706",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=26651"
+  },
+  {
+    "rank": 4,
+    "name": "Matt Fitzpatrick",
+    "country": "England",
+    "owgrId": 17646,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/ccd54d4c-53fe-4147-bef6-62d3599b80fc/Fitzpatrick%20Matt.jpg?w=800&h=800&fit=clip&rect=1347,467,1958,1958",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=17646"
+  },
+  {
+    "rank": 5,
+    "name": "Wyndham Clark",
+    "country": "United States",
+    "owgrId": 23604,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/9063ce13-d0f9-4e33-b36f-b0235f990d0e/U.S%20Open%202026%20Winner.jpg?w=800&h=800&fit=clip&rect=1041,239,2450,2451",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=23604"
+  },
+  {
+    "rank": 6,
+    "name": "Russell Henley",
+    "country": "United States",
+    "owgrId": 14578,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/01e4134f-8498-435d-a575-9d18f47b521e/Henley%20Russell.png?w=800&h=800&fit=clip&rect=229,8,914,914",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=14578"
+  },
+  {
+    "rank": 7,
+    "name": "Chris Gotterup",
+    "country": "United States",
+    "owgrId": 27774,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/2de873f6-5913-41fd-88ea-b0a4d0ae94d0/Gotterup%20Chris.jpg?w=800&h=800&fit=clip&rect=1440,313,1397,1397",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=27774"
+  },
+  {
+    "rank": 8,
+    "name": "Tommy Fleetwood",
+    "country": "England",
+    "owgrId": 12294,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/12fe5815-47cd-4c78-89cf-19b836e64d2e/Fleetwood%20Tommy.jpg?w=500&h=500&fit=clip&rect=2022,271,1406,1406",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=12294"
+  },
+  {
+    "rank": 9,
+    "name": "Sam Burns",
+    "country": "United States",
+    "owgrId": 19483,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/031615ab-d784-42b3-94d9-9e84e62da24a/Burns%20Sam.png?w=750&h=750&fit=clip&rect=1433,513,2634,2634",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=19483"
+  },
+  {
+    "rank": 10,
+    "name": "Xander Schauffele",
+    "country": "United States",
+    "owgrId": 19895,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/aa4233ab-2e90-4b08-8394-30d8f07c57b1/Schauffele%20Xander.jpg?w=800&h=800&fit=clip&rect=830,43,2331,2331",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=19895"
+  },
+  {
+    "rank": 11,
+    "name": "Collin Morikawa",
+    "country": "United States",
+    "owgrId": 22085,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/725b7338-cba6-4131-ac8a-e75524130d10/Morikawa%20Collin.jpg?w=1000&h=1000&fit=clip&rect=641,131,2058,2057",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=22085"
+  },
+  {
+    "rank": 12,
+    "name": "Viktor Hovland",
+    "country": "Norway",
+    "owgrId": 18841,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/612a4e60-69a2-4388-ae43-24f656d0f413/Hovland%20Viktor1.jpg?w=1000&h=1000&fit=clip&rect=0,495,2626,2626",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=18841"
+  },
+  {
+    "rank": 13,
+    "name": "Si Woo Kim",
+    "country": "South Korea",
+    "owgrId": 14609,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/b07dec1e-4728-41eb-9ff1-6abc5c17efc8/Kim%20Si-woo.jpg?w=500&h=500&fit=clip&rect=244,36,500,500",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=14609"
+  },
+  {
+    "rank": 14,
+    "name": "Jon Rahm",
+    "country": "Spain",
+    "owgrId": 19195,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/a097d710-5ae7-4b84-960e-f28b10bcd1ad/Rahm%20Jon%202024.jpg?w=800&h=800&fit=clip&rect=0,393,1655,1655",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=19195"
+  },
+  {
+    "rank": 15,
+    "name": "Justin Rose",
+    "country": "England",
+    "owgrId": 6093,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/6bb28c9c-e620-4c83-acda-29e5f404df66/Rose%20Justin.jpg?w=800&h=800&fit=clip&rect=1104,405,1128,1128",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=6093"
+  },
+  {
+    "rank": 16,
+    "name": "Ludvig Aberg",
+    "country": "Sweden",
+    "owgrId": 23950,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/a6b30c4c-673a-4bef-a7b3-b80c884a2cbe/Aberg%20Ludvig.jpg?w=800&h=800&fit=clip&rect=1100,1834,2064,2064",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=23950"
+  },
+  {
+    "rank": 17,
+    "name": "J.J. Spaun",
+    "country": "United States",
+    "owgrId": 17536,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/fe093dfb-300e-463b-9cc8-aac00576b960/US%20OPEN%20WINNER.jpg?w=866&h=866&fit=clip&rect=337,0,866,866",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=17536"
+  },
+  {
+    "rank": 18,
+    "name": "Aaron Rai",
+    "country": "England",
+    "owgrId": 18554,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/6e94d234-65f7-4f41-9cf1-b42ebc25d940/PGA%20CHAMPS%202026%20Winner.jpg?w=800&h=800&fit=clip&rect=1023,314,3149,3149",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=18554"
+  },
+  {
+    "rank": 19,
+    "name": "Robert MacIntyre",
+    "country": "Scotland",
+    "owgrId": 23323,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/21b3d02f-08d4-4856-aea5-fc137d0d55b9/MacIntyre%20Robert.jpg?w=1000&h=1000&fit=clip&rect=441,9,2937,2937",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=23323"
+  },
+  {
+    "rank": 20,
+    "name": "Alex Noren",
+    "country": "Sweden",
+    "owgrId": 10419,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/b4ce1121-1398-4e1d-ab3f-7db4ff1f61ad/Noren%20Alex.jpg?w=800&h=800&fit=clip&rect=2436,536,1968,1968",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=10419"
+  },
+  {
+    "rank": 21,
+    "name": "Ryan Gerard",
+    "country": "United States",
+    "owgrId": 29767,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/3e640443-eea3-419d-bf0e-e8be370c30e3/Gerard%20Ryan.jpg?w=800&h=800&fit=clip&rect=1215,299,1678,1678",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=29767"
+  },
+  {
+    "rank": 22,
+    "name": "Justin Thomas",
+    "country": "United States",
+    "owgrId": 14139,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/bf3803d6-ae3b-4b6a-88f1-128c403ac2b8/Thomas%20Justin.jpg?w=800&h=800&fit=clip&rect=1632,1067,1395,1394",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=14139"
+  },
+  {
+    "rank": 23,
+    "name": "Ben Griffin",
+    "country": "United States",
+    "owgrId": 24968,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/1969fb7e-e7ce-4d8f-986f-5352099fb4fa/Griffin%20Ben.jpg?w=800&h=800&fit=clip&rect=741,0,3586,3586",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=24968"
+  },
+  {
+    "rank": 24,
+    "name": "Ryan Fox",
+    "country": "New Zealand",
+    "owgrId": 11889,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/99faa4a7-76d9-44a4-b284-210c794226cf/2026%20The%20Open%20-%20Ryan%20Fox.jpg?w=800&h=800&fit=clip&rect=1043,190,3198,3198",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=11889"
+  },
+  {
+    "rank": 25,
+    "name": "Tyrrell Hatton",
+    "country": "England",
+    "owgrId": 14796,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/41acb4be-c26a-4c37-a822-1a1e76e32de8/Hatton%20Tyrrell2.jpg?w=1080&h=1080&fit=clip&rect=626,177,2060,2060",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=14796"
+  },
+  {
+    "rank": 26,
+    "name": "Hideki Matsuyama",
+    "country": "Japan",
+    "owgrId": 13562,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/ce94c7d6-08f7-4d96-9037-ad2c693fd00f/Matsuyama_Hideki.jpg?w=1000&h=1000&fit=clip&rect=538,166,1620,1620",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=13562"
+  },
+  {
+    "rank": 27,
+    "name": "Patrick Cantlay",
+    "country": "United States",
+    "owgrId": 15466,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/754cba69-b5f3-477d-9810-34d5c801171b/Cantlay%20Patrick.jpg?w=800&h=800&fit=clip&rect=1757,126,2115,2115",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=15466"
+  },
+  {
+    "rank": 28,
+    "name": "Patrick Reed",
+    "country": "United States",
+    "owgrId": 14838,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/e2adc2cd-a753-4ba0-b7c3-cdbce760c1af/Reed%20Patrick.jpg?w=800&h=800&fit=clip&rect=1241,0,1646,1646",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=14838"
+  },
+  {
+    "rank": 29,
+    "name": "Jacob Bridgeman",
+    "country": "United States",
+    "owgrId": 29433,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/8b8221e9-2e58-4f79-b1d2-b1be61d5e607/Bridgeman%20Jacob.jpg?w=800&h=800&fit=clip&rect=0,131,3108,3108",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=29433"
+  },
+  {
+    "rank": 30,
+    "name": "Min Woo Lee",
+    "country": "Australia",
+    "owgrId": 16841,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/3dc38a92-3dc3-409a-b3c2-dc8b05e6fedc/Woo%20Lee%20Min.jpg?w=1000&h=1000&fit=clip&rect=1967,333,2124,2124",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=16841"
+  },
+  {
+    "rank": 31,
+    "name": "Tom Kim",
+    "country": "South Korea",
+    "owgrId": 24766,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/28669815-630d-4384-b3f2-b628945ec5cf/Kim%20Tom.jpg?w=1000&h=1000&fit=clip&rect=1922,639,2187,2187",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=24766"
+  },
+  {
+    "rank": 32,
+    "name": "Michael Brennan",
+    "country": "United States",
+    "owgrId": 29197,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/97a46d7e-65b6-4910-a573-8ec89a0c6b99/Brennan%20Michael.jpg?w=800&h=800&fit=clip&rect=1382,227,2203,2203",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=29197"
+  },
+  {
+    "rank": 33,
+    "name": "Kristoffer Reitan",
+    "country": "Norway",
+    "owgrId": 21407,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/454c28c9-b814-4f96-9469-124eece85515/Reitan%20Kristoffer.jpg?w=800&h=800&fit=clip&rect=706,167,1790,1790",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=21407"
+  },
+  {
+    "rank": 34,
+    "name": "Akshay Bhatia",
+    "country": "United States",
+    "owgrId": 26096,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/ca75fd8a-5a3d-4a0c-b2f9-3be3e7214b55/Bhatia%20Akshay.jpg?w=1000&h=1000&fit=clip&rect=1171,263,1502,1502",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=26096"
+  },
+  {
+    "rank": 35,
+    "name": "Sepp Straka",
+    "country": "Austria",
+    "owgrId": 17511,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/edf53d1c-4c39-4c40-ad60-e01aa463a4a6/Straka%20Sepp.jpg?w=900&h=900&fit=clip&rect=622,133,3867,3867",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=17511"
+  },
+  {
+    "rank": 36,
+    "name": "Bryson DeChambeau",
+    "country": "United States",
+    "owgrId": 19841,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/b2705f41-57ca-4408-b58d-d04b90d4ea89/DeChambeau%20Bryson%20V2.jpg?w=800&h=800&fit=clip&rect=484,0,2960,2960",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=19841"
+  },
+  {
+    "rank": 37,
+    "name": "Joaquin Niemann",
+    "country": "Chile",
+    "owgrId": 18079,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/8b8f4d6b-ff26-4f05-8584-c2f41fb5a27b/Nieman%20Joaquin.png?w=500&h=500&fit=clip&rect=536,456,639,639",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=18079"
+  },
+  {
+    "rank": 38,
+    "name": "J.T. Poston",
+    "country": "United States",
+    "owgrId": 21554,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/8f9bdb2f-21de-4aa0-a9e6-fcf36deea135/Poston%20J.T..jpg?w=600&h=600&fit=clip&rect=466,94,668,668",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=21554"
+  },
+  {
+    "rank": 39,
+    "name": "Kurt Kitayama",
+    "country": "United States",
+    "owgrId": 21891,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/2e59f128-d380-416f-acd9-70a8f0c19426/Kitayama%20Kurt.jpg?w=800&h=800&fit=clip&rect=531,70,2377,2378",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=21891"
+  },
+  {
+    "rank": 40,
+    "name": "Michael Thorbjornsen",
+    "country": "United States",
+    "owgrId": 26649,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/34965f1f-7f83-4daa-aedf-5869ea51c767/Thorbjornsen%20Michael.jpg?w=800&h=800&fit=clip&rect=820,78,2160,2160",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=26649"
+  },
+  {
+    "rank": 41,
+    "name": "Shane Lowry",
+    "country": "Ireland",
+    "owgrId": 13900,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/3ed99771-1c49-4b5c-802a-a51ebc585a02/Lowry%20Shane.jpg?w=1080&h=1080&fit=clip&rect=2257,440,2360,2359",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=13900"
+  },
+  {
+    "rank": 42,
+    "name": "Harris English",
+    "country": "United States",
+    "owgrId": 14577,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/a0100135-141e-42fb-8cb0-bd23d413f573/English-Harry.jpg?w=800&h=800&fit=clip&rect=1733,153,1494,1494",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=14577"
+  },
+  {
+    "rank": 43,
+    "name": "Nicolai Hojgaard",
+    "country": "Denmark",
+    "owgrId": 23602,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/5e48f692-0c75-495c-aff2-6cfef5511409/Hojgaard%20Nicolai.jpg?w=800&h=800&fit=clip&rect=2155,848,2478,2478",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=23602"
+  },
+  {
+    "rank": 44,
+    "name": "Gary Woodland",
+    "country": "United States",
+    "owgrId": 12577,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/90486900-960f-4259-b5d6-e52dfada9e9f/Woodland%20Gary..jpg?w=800&h=800&fit=clip&rect=1329,0,3799,3799",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=12577"
+  },
+  {
+    "rank": 45,
+    "name": "Bud Cauley",
+    "country": "United States",
+    "owgrId": 14502,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/7eda0ea1-dfb3-4d4c-a8d0-002200150ade/Cauley%20Bud.jpg?w=800&h=800&fit=clip&rect=714,129,2191,2191",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=14502"
+  },
+  {
+    "rank": 46,
+    "name": "Alex Smalley",
+    "country": "United States",
+    "owgrId": 18474,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/a591c76a-0a57-477b-8526-9b6235ead58f/Smalley%20Alex.jpg?w=800&h=800&fit=clip&rect=1291,155,2117,2117",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=18474"
+  },
+  {
+    "rank": 47,
+    "name": "Maverick McNealy",
+    "country": "United States",
+    "owgrId": 18634,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/191bd434-5db6-4421-b35f-c891fd75298a/McNealy%20Maverick.jpg?w=800&h=800&fit=clip&rect=1575,565,2073,2073",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=18634"
+  },
+  {
+    "rank": 48,
+    "name": "Rickie Fowler",
+    "country": "United States",
+    "owgrId": 12965,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/56cb3e99-490f-49d1-8b63-f23b1d0bfd5f/Fowler%20Rickie3.jpg?w=800&h=800&fit=clip&rect=1011,386,1762,1762",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=12965"
+  },
+  {
+    "rank": 49,
+    "name": "Keegan Bradley",
+    "country": "United States",
+    "owgrId": 13872,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/70c314ac-1b3c-490d-a57a-bc2351430ec5/Bradley%20Keegan.jpg?w=640&h=640&fit=clip&rect=144,43,640,640",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=13872"
+  },
+  {
+    "rank": 50,
+    "name": "Jake Knapp",
+    "country": "United States",
+    "owgrId": 19396,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/2bc54d4a-a1e1-4647-b527-43967c9d077f/Knapp%20Jake.jpg?w=800&h=800&fit=clip&rect=1739,184,2239,2239",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=19396"
+  },
+  {
+    "rank": 51,
+    "name": "Lucas Herbert",
+    "country": "Australia",
+    "owgrId": 17064,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/9a8e2fd8-b3d3-41cb-9f40-8b6f91eaffc4/Herbert%20Lucas.jpg?w=800&h=800&fit=clip&rect=2036,455,2267,2267",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=17064"
+  },
+  {
+    "rank": 52,
+    "name": "Adam Scott",
+    "country": "Australia",
+    "owgrId": 6430,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/3803e4d0-2aad-42a0-9ed9-7fb591b71b88/Scott%20Adam.jpg?w=600&h=600&fit=clip&rect=250,31,600,600",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=6430"
+  },
+  {
+    "rank": 53,
+    "name": "Marco Penge",
+    "country": "England",
+    "owgrId": 22465,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/332374e8-4efd-4d53-823d-8de91fe13298/Penge%20Marco.jpg?w=800&h=800&fit=clip&rect=904,340,1656,1656",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=22465"
+  },
+  {
+    "rank": 54,
+    "name": "Corey Conners",
+    "country": "Canada",
+    "owgrId": 17576,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/4fa90e03-22b6-4873-8d6c-c2ca1803ac18/Conners%20Corey.jpg?w=600&h=600&fit=clip&rect=337,24,600,600",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=17576"
+  },
+  {
+    "rank": 55,
+    "name": "Matt Wallace",
+    "country": "England",
+    "owgrId": 20706,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/6f2f8ed1-6c1c-4121-8e6f-38969458afb4/Wallace%20Matt.jpg?w=800&h=800&fit=clip&rect=1374,227,1819,1820",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=20706"
+  },
+  {
+    "rank": 56,
+    "name": "Alex Fitzpatrick",
+    "country": "England",
+    "owgrId": 25362,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/d9e0f516-be4f-480a-9293-2f23599535d5/Fitzpatrick%20Alex.jpg?w=800&h=800&fit=clip&rect=1753,598,1806,1806",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=25362"
+  },
+  {
+    "rank": 57,
+    "name": "Jordan Spieth",
+    "country": "United States",
+    "owgrId": 14636,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/8d48fdd3-8fe6-4232-84f7-67663477fb99/Spieth_Jordan.jpg?w=500&h=500&fit=clip&rect=220,52,594,594",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=14636"
+  },
+  {
+    "rank": 58,
+    "name": "Eugenio Chacarra",
+    "country": "Spain",
+    "owgrId": 26745,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/68f60fee-0a50-428d-b498-a643170a62e5/Lopez-Chacarra%20Eugenio.jpg?w=357&h=357&fit=clip&rect=143,0,357,357",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=26745"
+  },
+  {
+    "rank": 59,
+    "name": "Sungjae Im",
+    "country": "South Korea",
+    "owgrId": 17488,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/fda1dd8b-50ae-473a-a579-02cc0e245912/IM%20Sungjae2.jpg?w=1000&h=1000&fit=clip&rect=844,326,2087,2087",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=17488"
+  },
+  {
+    "rank": 60,
+    "name": "Nicolas Echavarria",
+    "country": "Colombia",
+    "owgrId": 22833,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/e56c65ad-ed52-4770-a36b-d2529627339f/Echavarria%20Nicolas.jpg?w=800&h=800&fit=clip&rect=686,214,3369,3369",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=22833"
+  },
+  {
+    "rank": 61,
+    "name": "Daniel Berger",
+    "country": "United States",
+    "owgrId": 17606,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/e8d62b80-8c6b-46b7-be51-5d948548bb4b/Berger_Daniel.jpg?w=1000&h=1000&fit=clip&rect=1549,152,2253,2253",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=17606"
+  },
+  {
+    "rank": 62,
+    "name": "Samuel Stevens",
+    "country": "United States",
+    "owgrId": 25569,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/26e06f5a-db74-48b1-a877-774a72508429/Stevens%20Samuel.jpg?w=800&h=800&fit=clip&rect=1523,123,2132,2132",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=25569"
+  },
+  {
+    "rank": 63,
+    "name": "Brian Harman",
+    "country": "United States",
+    "owgrId": 8825,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/a50e4716-e3e7-4169-8945-085f9fb97ce4/Harman%20Brian.jpg?w=800&h=800&fit=clip&rect=882,210,1544,1545",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=8825"
+  },
+  {
+    "rank": 64,
+    "name": "Michael Kim",
+    "country": "United States",
+    "owgrId": 17543,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/5b1de0f3-a603-4a8a-bb53-c15505e89be2/Kim%20Michael.jpg?w=800&h=800&fit=clip&rect=1034,0,2238,2239",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=17543"
+  },
+  {
+    "rank": 65,
+    "name": "Jackson Koivun",
+    "country": "United States",
+    "owgrId": 32319,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/c83586e1-4824-4f7e-8aba-4ba95ca75d3f/Koivun%20Jackson.jpg?w=800&h=800&fit=clip&rect=307,393,2199,2200",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=32319"
+  },
+  {
+    "rank": 66,
+    "name": "Ryo Hisatsune",
+    "country": "Japan",
+    "owgrId": 22760,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/2a3f662c-b4d4-4439-afe0-354d02677695/Hisatsune%20Ryo.jpg?w=800&h=800&fit=clip&rect=1962,528,1101,1101",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=22760"
+  },
+  {
+    "rank": 67,
+    "name": "Harry Hall",
+    "country": "England",
+    "owgrId": 27194,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/55f79149-8141-4bf0-92ef-5c120cce5eb8/Hall%20Harry.jpg?w=800&h=800&fit=clip&rect=1584,97,1721,1720",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=27194"
+  },
+  {
+    "rank": 68,
+    "name": "John Keefer",
+    "country": "United States",
+    "owgrId": 32457,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/83fe4e58-c72d-4682-ba64-4a91ee0d109b/Keefer%20John.jpg?w=800&h=800&fit=clip&rect=1190,321,1153,1154",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=32457"
+  },
+  {
+    "rank": 69,
+    "name": "Casey Jarvis",
+    "country": "South Africa",
+    "owgrId": 26947,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/76563479-dcf8-4ba9-9192-55551fc81744/Jarvis%20Casey.jpg?w=800&h=800&fit=clip&rect=1253,481,1321,1320",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=26947"
+  },
+  {
+    "rank": 70,
+    "name": "Pierceson Coody",
+    "country": "United States",
+    "owgrId": 28309,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/cbd05af3-8816-4aed-966c-475ca8eceb87/Coody%20Pierceson.jpg?w=615&h=615&fit=clip&rect=79,68,615,615",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=28309"
+  },
+  {
+    "rank": 71,
+    "name": "Jason Day",
+    "country": "Australia",
+    "owgrId": 9771,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/0691a50d-8f82-434b-ad44-46f760e7854f/Day%20Jason.jpg?w=450&h=450&fit=clip&rect=335,41,450,450",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=9771"
+  },
+  {
+    "rank": 72,
+    "name": "Rasmus Hojgaard",
+    "country": "Denmark",
+    "owgrId": 23838,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/bb780291-2af6-44db-908f-816167b35335/Hojgaard%20Rasmus.jpg?w=800&h=800&fit=clip&rect=0,141,2189,2189",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=23838"
+  },
+  {
+    "rank": 73,
+    "name": "Matt McCarty",
+    "country": "United States",
+    "owgrId": 28635,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/19767d32-78aa-4fd8-a76f-2f1dee55ff4b/McCarty%20Matt.jpg?w=800&h=800&fit=clip&rect=775,165,1822,1822",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=28635"
+  },
+  {
+    "rank": 74,
+    "name": "Keith Mitchell",
+    "country": "United States",
+    "owgrId": 17365,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/f805ce49-b73e-4d1e-b6f0-c965f5db11d5/Mitchell_Keith.jpg?w=700&h=700&fit=clip&rect=562,153,2335,2336",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=17365"
+  },
+  {
+    "rank": 75,
+    "name": "Max Homa",
+    "country": "United States",
+    "owgrId": 17538,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/8f570252-2bb7-4c9d-9cb3-66eeb73e3860/Homa%20Max..jpg?w=900&h=900&fit=clip&rect=104,178,1978,1978",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=17538"
+  },
+  {
+    "rank": 76,
+    "name": "Rasmus Neergaard-Petersen",
+    "country": "Denmark",
+    "owgrId": 23841,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/a5af3c78-e105-4168-b56c-15aec51b8291/Neergaard-Petersen%20Rasmus.jpg?w=800&h=800&fit=clip&rect=226,88,1933,1933",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=23841"
+  },
+  {
+    "rank": 77,
+    "name": "Jordan Smith",
+    "country": "England",
+    "owgrId": 18586,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/ccf55799-64af-4cca-9591-322d47461856/Smith%20Jordan.jpg?w=657&h=657&fit=clip&rect=183,0,658,657",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=18586"
+  },
+  {
+    "rank": 78,
+    "name": "Eric Cole",
+    "country": "United States",
+    "owgrId": 21756,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/576c6e99-0eb0-47f0-a7cc-6a998829e212/Cole%20Eric.jpg?w=1000&h=1000&fit=clip&rect=1834,460,1661,1661",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=21756"
+  },
+  {
+    "rank": 79,
+    "name": "David Puig",
+    "country": "Spain",
+    "owgrId": 28984,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/ed92b626-f17b-460d-8619-2a4f75ea4a33/Puig%20David.jpg?w=427&h=427&fit=clip&rect=0,27,427,427",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=28984"
+  },
+  {
+    "rank": 80,
+    "name": "Ross Steelman",
+    "country": "United States",
+    "owgrId": 31192,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/0dbc5bd7-1dfd-4728-a817-32be511666b0/Steelman%20Ross.jpg?w=800&h=800&fit=clip&rect=1431,0,2294,2293",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=31192"
+  },
+  {
+    "rank": 81,
+    "name": "Nick Taylor",
+    "country": "Canada",
+    "owgrId": 13126,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/26af18f2-839b-487e-9965-590b467c94d6/taylor%20nick.jpg?w=800&h=800&fit=clip&rect=2636,1425,3012,3013",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=13126"
+  },
+  {
+    "rank": 82,
+    "name": "Andrew Novak",
+    "country": "United States",
+    "owgrId": 23475,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/d494c20d-42d7-4090-bc90-930683f5e087/Novak%20Andrew1.jpg?w=800&h=800&fit=clip&rect=1227,242,3406,3406",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=23475"
+  },
+  {
+    "rank": 83,
+    "name": "Steven Fisk",
+    "country": "United States",
+    "owgrId": 26657,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/da21d057-04ac-4fbb-98a9-0025517cab65/Fisk%20Steven.jpg?w=800&h=800&fit=clip&rect=1740,169,2074,2075",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=26657"
+  },
+  {
+    "rank": 84,
+    "name": "Sami Valimaki",
+    "country": "Finland",
+    "owgrId": 23816,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/bc5c8795-f8c6-43a3-9661-ab5e5be6fee8/Valimaki%20Sami.jpg?w=800&h=800&fit=clip&rect=1487,439,1852,1852",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=23816"
+  },
+  {
+    "rank": 85,
+    "name": "Sahith Theegala",
+    "country": "United States",
+    "owgrId": 23014,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/de509e6e-5733-43c9-92a4-2c223146fb70/Theegala_Sahith_W13_2021_002.jpg?w=800&h=800&fit=clip&rect=662,418,1135,1136",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=23014"
+  },
+  {
+    "rank": 86,
+    "name": "McClure Meissner",
+    "country": "United States",
+    "owgrId": 28159,
+    "photo": "https://pga-tour-res.cloudinary.com/image/upload/c_fill,g_face:center,q_auto,f_auto,dpr_2.0,h_220,w_200,d_stub:default_avatar_light.webp/headshots_59143",
+    "photoSource": "https://www.pgatour.com/player/59143/mac-meissner"
+  },
+  {
+    "rank": 87,
+    "name": "Matti Schmid",
+    "country": "Germany",
+    "owgrId": 20722,
+    "photo": "https://pga-tour-res.cloudinary.com/image/upload/c_fill,g_face:center,q_auto,f_auto,dpr_2.0,h_220,w_200,d_stub:default_avatar_light.webp/headshots_48867",
+    "photoSource": "https://www.pgatour.com/player/48867/matti-schmid"
+  },
+  {
+    "rank": 88,
+    "name": "Thomas Detry",
+    "country": "Belgium",
+    "owgrId": 14181,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/4a2744d7-4172-4864-bc8b-8dfc9213a76e/Detry%20Thomas.jpg?w=800&h=800&fit=clip&rect=602,132,1532,1532",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=14181"
+  },
+  {
+    "rank": 89,
+    "name": "Aldrich Potgieter",
+    "country": "South Africa",
+    "owgrId": 27900,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/5653ea02-e9f4-4690-9733-bc3ec5f19eec/Potgieter%20Aldrich.jpg?w=800&h=800&fit=clip&rect=2391,1324,2054,2054",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=27900"
+  },
+  {
+    "rank": 90,
+    "name": "Max Greyserman",
+    "country": "United States",
+    "owgrId": 23465,
+    "photo": "https://pga-tour-res.cloudinary.com/image/upload/c_fill,g_face:center,q_auto,f_auto,dpr_2.0,h_220,w_200,d_stub:default_avatar_light.webp/headshots_51977",
+    "photoSource": "https://www.pgatour.com/player/51977/max-greyserman"
+  },
+  {
+    "rank": 91,
+    "name": "Denny McCarthy",
+    "country": "United States",
+    "owgrId": 19870,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/9865b027-8726-406f-9129-b5106fe84e82/McCarthy%20Denny1.jpg?w=1000&h=1000&fit=clip&rect=916,124,1779,1780",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=19870"
+  },
+  {
+    "rank": 92,
+    "name": "Beau Hossler",
+    "country": "United States",
+    "owgrId": 15470,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/9c0249e7-4735-4ebb-a4a6-bce54e2c2adb/Hossler%20Beau.jpg?w=900&h=900&fit=clip&rect=1825,612,2826,2825",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=15470"
+  },
+  {
+    "rank": 93,
+    "name": "Jayden Schaper",
+    "country": "South Africa",
+    "owgrId": 26991,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/d544be39-a9d0-41a1-a6eb-f5abae1281d2/Schaper%20Jayden.jpg?w=800&h=800&fit=clip&rect=783,460,2101,2102",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=26991"
+  },
+  {
+    "rank": 94,
+    "name": "Keita Nakajima",
+    "country": "Japan",
+    "owgrId": 21074,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/f260941f-fcd6-4c4a-a9bf-f3a51ccea736/Nakajima%20Keita.jpg?w=600&h=600&fit=clip&rect=108,52,600,600",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=21074"
+  },
+  {
+    "rank": 95,
+    "name": "Ricky Castillo",
+    "country": "United States",
+    "owgrId": 27819,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/209c4111-dfb9-44b6-987f-31636d4d331a/Castillo%20Ricky.jpg?w=1000&h=1000&fit=clip&rect=939,243,1335,1335",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=27819"
+  },
+  {
+    "rank": 96,
+    "name": "Taylor Pendrith",
+    "country": "Canada",
+    "owgrId": 17780,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/19c1ebc9-f757-47a9-8e94-358c578c2a78/Pendrith%20Taylor.jpg?w=800&h=800&fit=clip&rect=2054,324,2551,2551",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=17780"
+  },
+  {
+    "rank": 97,
+    "name": "Christiaan Bezuidenhout",
+    "country": "South Africa",
+    "owgrId": 18103,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/56db1e5c-9891-4ada-a301-379789b5bdcb/Bezuidenhout%20Christiaan.jpg?w=1000&h=1000&fit=clip&rect=1047,430,1919,1919",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=18103"
+  },
+  {
+    "rank": 98,
+    "name": "Jackson Suber",
+    "country": "United States",
+    "owgrId": 29279,
+    "photo": "https://pga-tour-res.cloudinary.com/image/upload/c_fill,g_face:center,q_auto,f_auto,dpr_2.0,h_220,w_200,d_stub:default_avatar_light.webp/headshots_60019",
+    "photoSource": "https://www.pgatour.com/player/60019/jackson-suber"
+  },
+  {
+    "rank": 99,
+    "name": "Daniel Hillier",
+    "country": "New Zealand",
+    "owgrId": 21362,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/ba5f6876-60e8-4c11-956d-9400bcc2e087/Hillier%20Daniel.jpg?w=800&h=800&fit=clip&rect=440,1447,1638,1639",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=21362"
+  },
+  {
+    "rank": 100,
+    "name": "Shaun Norris",
+    "country": "South Africa",
+    "owgrId": 7677,
+    "photo": "https://assets-us-01.kc-usercontent.com:443/00be6aeb-6ab1-00f0-f77a-4c8f38e69314/06f4e490-f55b-4266-93a1-08d8d6e8ea2c/Norris%20Shaun_001.jpg?w=800&h=800&fit=clip&rect=1548,959,800,800",
+    "photoSource": "https://apiweb.owgr.com/api/owgr/playerprofile/getPlayerProfileSummary?playerId=7677"
+  }
+];
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const synth = window.speechSynthesis;
+  let index = 0, playing = false, generation = 0, timer = null, utterance = null;
+  const buttons = [];
+  function halt() {
+    generation++;
+    playing = false;
+    clearTimeout(timer);
+    if (synth) synth.cancel();
+    utterance = null;
+    $('play').textContent = 'Play from here';
+  }
+  function show() {
+    const p = PLAYERS[index];
+    $('rank').textContent = `WORLD RANKING #${p.rank}`;
+    $('name').textContent = p.name;
+    $('country').textContent = p.country;
+    $('photo').hidden = true;
+    $('fallback').hidden = false;
+    $('fallback').textContent = 'Loading portrait…';
+    $('photo').alt = `Portrait of ${p.name}`;
+    $('photo').onload = () => { $('photo').hidden = false; $('fallback').hidden = true; };
+    $('photo').onerror = () => { $('photo').hidden = true; $('fallback').hidden = false; $('fallback').textContent = 'Photo unavailable'; };
+    if (p.photo) $('photo').src = p.photo;
+    else { $('photo').removeAttribute('src'); $('fallback').textContent = 'Photo unavailable'; }
+    $('progress').value = index + 1;
+    $('previous').disabled = index === 0;
+    $('next').disabled = index === PLAYERS.length - 1;
+    buttons.forEach((b,i) => b.setAttribute('aria-current', String(i === index)));
+    const b = buttons[index], list = $('list');
+    if (b) list.scrollTop = b.offsetTop - list.offsetTop - list.clientHeight / 2;
+  }
+  function say() {
+    const token = generation;
+    const p = PLAYERS[index];
+    $('status').textContent = `Reading ${index + 1} of ${PLAYERS.length}: ${p.name}`;
+    utterance = new SpeechSynthesisUtterance(`World number ${p.rank}. ${p.name}.`);
+    utterance.lang = 'en-US';
+    utterance.rate = Number($('speed').value);
+    const voice = synth.getVoices().find(v => v.voiceURI === $('voice').value);
+    if (voice) { utterance.voice = voice; utterance.lang = voice.lang; }
+    utterance.onend = () => {
+      if (token !== generation || !playing) return;
+      if (index === PLAYERS.length - 1) { halt(); $('status').textContent = 'Finished all 100 players.'; return; }
+      timer = setTimeout(() => { if (token === generation && playing) { index++; show(); say(); } }, 650);
+    };
+    utterance.onerror = e => {
+      if (token !== generation) return;
+      halt(); $('status').textContent = `Speech unavailable (${e.error}). Try an English voice or open this file in Chrome.`;
+    };
+    synth.speak(utterance);
+  }
+  function start() {
+    halt();
+    if (!synth) { $('status').textContent = 'Speech is not supported in this browser. Open this file in Chrome.'; return; }
+    playing = true;
+    $('play').textContent = 'Restart this player';
+    say();
+  }
+  function select(i) { halt(); index = i; show(); $('status').textContent = 'Ready. Play starts from this player.'; }
+  PLAYERS.forEach((p,i) => {
+    const b = document.createElement('button');
+    const rank = document.createElement('span'), name = document.createElement('span');
+    rank.textContent = p.rank; name.textContent = p.name;
+    b.append(rank,name); b.onclick = () => select(i); buttons.push(b); $('list').appendChild(b);
+  });
+  $('play').onclick = start;
+  $('stop').onclick = () => { halt(); $('status').textContent = 'Stopped. Play repeats the current player and continues.'; };
+  $('previous').onclick = () => select(Math.max(0,index-1));
+  $('next').onclick = () => select(Math.min(PLAYERS.length-1,index+1));
+  $('speed').oninput = () => { $('speedLabel').textContent = `${Number($('speed').value).toFixed(2)}×`; };
+  function voices() {
+    const selected = $('voice').value;
+    $('voice').replaceChildren(new Option('Browser default English voice',''));
+    synth.getVoices().filter(v => /^en\b/i.test(v.lang)).forEach(v => $('voice').add(new Option(`${v.name} (${v.lang})`,v.voiceURI)));
+    if ([...$('voice').options].some(o => o.value === selected)) $('voice').value = selected;
+  }
+  if (synth) { voices(); synth.addEventListener('voiceschanged', voices); }
+  $('download').onclick = () => {
+    const url = URL.createObjectURL(new Blob([$('reader-script').textContent],{type:'text/javascript'}));
+    const a = document.createElement('a'); a.href = url; a.download = 'owgr-top100.js'; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  window.addEventListener('pagehide', halt);
+  show();
+})();
+</script></html>
